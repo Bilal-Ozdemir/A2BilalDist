@@ -27,7 +27,7 @@ let db;
     )
   `);
 
-  
+
   const initialData = [
     { timeOfDay: 'Morning', language: 'English', greetingMessage: 'Good Morning!', tone: 'Formal' },
     { timeOfDay: 'Afternoon', language: 'English', greetingMessage: 'Good Afternoon!', tone: 'Casual' },
@@ -37,7 +37,6 @@ let db;
     { timeOfDay: 'Evening', language: 'French', greetingMessage: 'Bonsoir!', tone: 'Formal' }
   ];
 
-  
   const count = await db.get('SELECT COUNT(*) AS count FROM Greetings');
   if (count.count === 0) {
     for (const greeting of initialData) {
@@ -46,9 +45,49 @@ let db;
         [greeting.timeOfDay, greeting.language, greeting.greetingMessage, greeting.tone]
       );
     }
-   
+    console.log('Database seeded with initial data.');
   }
 })();
+
+
+app.post('/api/greet', async (req, res) => {
+  const { timeOfDay, language, tone } = req.body;
+
+  try {
+    const greeting = await db.get(
+      'SELECT greetingMessage FROM Greetings WHERE timeOfDay = ? AND language = ? AND tone = ?',
+      [timeOfDay, language, tone]
+    );
+
+    if (!greeting) {
+      return res.status(404).json({ error: 'Greeting not found for the given parameters' });
+    }
+
+    res.json({ greetingMessage: greeting.greetingMessage });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
+app.get('/api/times-of-day', async (req, res) => {
+  try {
+    const timesOfDay = await db.all('SELECT DISTINCT timeOfDay FROM Greetings');
+    res.json({ timesOfDay: timesOfDay.map(row => row.timeOfDay) });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
+app.get('/api/languages', async (req, res) => {
+  try {
+    const languages = await db.all('SELECT DISTINCT language FROM Greetings');
+    res.json({ languages: languages.map(row => row.language) });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 
 app.listen(PORT, () => {
