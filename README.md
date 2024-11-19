@@ -1,4 +1,6 @@
 # Bilal Ozdemir A2
+## GitHub Repository
+[https://github.com/Bilal-Ozdemir/A2BilalDist](https://github.com/Bilal-Ozdemir/A2BilalDist)
 # Greetings API
 
 This API allows you to manage and retrieve greetings based on the time of day, language, and tone.
