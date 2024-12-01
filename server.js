@@ -1,7 +1,6 @@
 const express = require('express');
-const sqlite = require('sqlite');
-const sqlite3 = require('sqlite3');
-const path = require('path');
+const { Pool } = require('pg');
+require('dotenv').config();
 
 const app = express();
 const PORT = 5000;
@@ -9,43 +8,47 @@ const PORT = 5000;
 app.use(express.json());
 
 
-let db;
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false 
+  }
+});
+
+
 (async () => {
-  db = await sqlite.open({
-    filename: './data/database.db',
-    driver: sqlite3.Database
-  });
+  const client = await pool.connect();
+  try {
+    
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS Greetings (
+        id SERIAL PRIMARY KEY,
+        timeOfDay TEXT NOT NULL,
+        language TEXT NOT NULL,
+        greetingMessage TEXT NOT NULL,
+        tone TEXT NOT NULL
+      )
+    `);
 
-
-  await db.exec(`
-    CREATE TABLE IF NOT EXISTS Greetings (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      timeOfDay TEXT NOT NULL,
-      language TEXT NOT NULL,
-      greetingMessage TEXT NOT NULL,
-      tone TEXT NOT NULL
-    )
-  `);
-
-
-  const initialData = [
-    { timeOfDay: 'Morning', language: 'English', greetingMessage: 'Good Morning!', tone: 'Formal' },
-    { timeOfDay: 'Afternoon', language: 'English', greetingMessage: 'Good Afternoon!', tone: 'Casual' },
-    { timeOfDay: 'Evening', language: 'English', greetingMessage: 'Good Evening!', tone: 'Formal' },
-    { timeOfDay: 'Morning', language: 'French', greetingMessage: 'Bonjour!', tone: 'Casual' },
-    { timeOfDay: 'Afternoon', language: 'Spanish', greetingMessage: '¡Buenas Tardes!', tone: 'Formal' },
-    { timeOfDay: 'Evening', language: 'French', greetingMessage: 'Bonsoir!', tone: 'Formal' }
-  ];
-
-  const count = await db.get('SELECT COUNT(*) AS count FROM Greetings');
-  if (count.count === 0) {
-    for (const greeting of initialData) {
-      await db.run(
-        `INSERT INTO Greetings (timeOfDay, language, greetingMessage, tone) VALUES (?, ?, ?, ?)`,
-        [greeting.timeOfDay, greeting.language, greeting.greetingMessage, greeting.tone]
-      );
+    
+    const result = await client.query('SELECT COUNT(*) AS count FROM Greetings');
+    if (parseInt(result.rows[0].count) === 0) {
+      await client.query(`
+        INSERT INTO Greetings (timeOfDay, language, greetingMessage, tone)
+        VALUES
+          ('Morning', 'English', 'Good Morning!', 'Formal'),
+          ('Afternoon', 'English', 'Good Afternoon!', 'Casual'),
+          ('Evening', 'English', 'Good Evening!', 'Formal'),
+          ('Morning', 'French', 'Bonjour!', 'Casual'),
+          ('Afternoon', 'Spanish', '¡Buenas Tardes!', 'Formal'),
+          ('Evening', 'French', 'Bonsoir!', 'Formal')
+      `);
+      console.log('Database seeded with initial data.');
     }
-    console.log('Database seeded with initial data.');
+  } catch (error) {
+    console.error('Error setting up the database:', error.message);
+  } finally {
+    client.release();
   }
 })();
 
@@ -54,16 +57,16 @@ app.post('/api/greet', async (req, res) => {
   const { timeOfDay, language, tone } = req.body;
 
   try {
-    const greeting = await db.get(
-      'SELECT greetingMessage FROM Greetings WHERE timeOfDay = ? AND language = ? AND tone = ?',
+    const result = await pool.query(
+      'SELECT greetingMessage FROM Greetings WHERE timeOfDay = $1 AND language = $2 AND tone = $3',
       [timeOfDay, language, tone]
     );
 
-    if (!greeting) {
+    if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Greeting not found for the given parameters' });
     }
 
-    res.json({ greetingMessage: greeting.greetingMessage });
+    res.json({ greetingMessage: result.rows[0].greetingmessage });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -72,8 +75,8 @@ app.post('/api/greet', async (req, res) => {
 
 app.get('/api/times-of-day', async (req, res) => {
   try {
-    const timesOfDay = await db.all('SELECT DISTINCT timeOfDay FROM Greetings');
-    res.json({ timesOfDay: timesOfDay.map(row => row.timeOfDay) });
+    const result = await pool.query('SELECT DISTINCT timeOfDay FROM Greetings');
+    res.json({ timesOfDay: result.rows.map(row => row.timeofday) });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -82,8 +85,8 @@ app.get('/api/times-of-day', async (req, res) => {
 
 app.get('/api/languages', async (req, res) => {
   try {
-    const languages = await db.all('SELECT DISTINCT language FROM Greetings');
-    res.json({ languages: languages.map(row => row.language) });
+    const result = await pool.query('SELECT DISTINCT language FROM Greetings');
+    res.json({ languages: result.rows.map(row => row.language) });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -93,3 +96,4 @@ app.get('/api/languages', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
+
