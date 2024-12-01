@@ -19,7 +19,7 @@ const pool = new Pool({
 (async () => {
   const client = await pool.connect();
   try {
-    
+   
     await client.query(`
       CREATE TABLE IF NOT EXISTS Greetings (
         id SERIAL PRIMARY KEY,
@@ -68,6 +68,7 @@ app.post('/api/greet', async (req, res) => {
 
     res.json({ greetingMessage: result.rows[0].greetingmessage });
   } catch (error) {
+    console.error('Error in /api/greet:', error.message);
     res.status(500).json({ error: error.message });
   }
 });
@@ -78,6 +79,7 @@ app.get('/api/times-of-day', async (req, res) => {
     const result = await pool.query('SELECT DISTINCT timeOfDay FROM Greetings');
     res.json({ timesOfDay: result.rows.map(row => row.timeofday) });
   } catch (error) {
+    console.error('Error in /api/times-of-day:', error.message);
     res.status(500).json({ error: error.message });
   }
 });
@@ -88,14 +90,22 @@ app.get('/api/languages', async (req, res) => {
     const result = await pool.query('SELECT DISTINCT language FROM Greetings');
     res.json({ languages: result.rows.map(row => row.language) });
   } catch (error) {
+    console.error('Error in /api/languages:', error.message);
     res.status(500).json({ error: error.message });
   }
 });
 
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+app.get('/', (req, res) => {
+  res.send('Welcome to the Greetings API!');
 });
+
+
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
+}
 
 module.exports = app;
 
