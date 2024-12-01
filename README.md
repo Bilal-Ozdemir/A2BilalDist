@@ -1,14 +1,22 @@
-# Bilal Ozdemir A2
+# Bilal Ozdemir A3
 ## GitHub Repository
 [https://github.com/Bilal-Ozdemir/A2BilalDist](https://github.com/Bilal-Ozdemir/A2BilalDist)
 # Greetings API
 
 This API allows you to manage and retrieve greetings based on the time of day, language, and tone.
 
+## API Details
+
+### Base URL
+**Live API URL**:  
+[https://a2-bilal-dist.vercel.app](https://a2-bilal-dist.vercel.app)
+
+---
+
 ## API Endpoints
 
 ### 1. Greet Endpoint
-- **URL**: `POST http://localhost:5000/api/greet`
+- **URL**: `POST https://a2-bilal-dist.vercel.app/api/greet`
 - **Description**: Returns a greeting message based on the `timeOfDay`, `language`, and `tone` provided.
 - **Request Body**:
   ```json
@@ -25,7 +33,7 @@ This API allows you to manage and retrieve greetings based on the time of day, l
   }
 
 ### 2. GetAllTimesOfDay Endpoint
-- **URL**: `GET http://localhost:5000/api/times-of-day`
+- **URL**: `GET https://a2-bilal-dist.vercel.app/api/times-of-day`
 - **Description**: Returns a list of all available times of day.
 - **Example JSON Response**:
   ```json
@@ -34,13 +42,24 @@ This API allows you to manage and retrieve greetings based on the time of day, l
   }
 
 ### 3. GetSupportedLanguages Endpoint
-- **URL**: `GET http://localhost:5000/api/languages`
+- **URL**: `GET https://a2-bilal-dist.vercel.app/api/languages`
 - **Description**: Returns a list of all supported languages.
 - **Example JSON Response**:
   ```json
   {
   "languages": ["English", "French", "Spanish"]
   }
+
+### Console Application
+- **Navigate to this directory:** 
+```json
+  cd MyConsoleApp
+  ```
+- **Run the Console App, and follow the prompts** 
+```json
+  dotnet run
+  ```
+  
 
  
 
